@@ -1,8 +1,18 @@
 const Book = require('../models/Book');
+const fs = require('fs');
 
 // GET /api/books
 exports.getAllBooks = (req, res) => {
   Book.find()
+    .then(books => res.status(200).json(books))
+    .catch(error => res.status(400).json({ error }));
+};
+
+// GET /api/books/bestrating
+exports.getBestRatedBooks = (req, res) => {
+  Book.find()
+    .sort({ averageRating: -1 })
+    .limit(3)
     .then(books => res.status(200).json(books))
     .catch(error => res.status(400).json({ error }));
 };
@@ -16,8 +26,12 @@ exports.getOneBook = (req, res) => {
 
 // POST /api/books
 exports.createBook = (req, res) => {
+  const bookObject = JSON.parse(req.body.book);
+
   const book = new Book({
-    ...req.body
+    ...bookObject,
+    userId: req.auth.userId,
+    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
 
   book.save()
@@ -27,30 +41,65 @@ exports.createBook = (req, res) => {
 
 // PUT /api/books/:id
 exports.updateBook = (req, res) => {
-  Book.updateOne(
-    { _id: req.params.id },
-    { ...req.body, _id: req.params.id }
-  )
+  const bookObject = req.file
+    ? {
+        ...JSON.parse(req.body.book),
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+      }
+    : { ...req.body };
+
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+      if (book.userId !== req.auth.userId) {
+        return res.status(403).json({ message: 'Requête non autorisée !' });
+      }
+
+      if (req.file) {
+        const filename = book.imageUrl.split('/images/')[1];
+        fs.unlink(`images/${filename}`, () => {});
+      }
+
+      return Book.updateOne(
+        { _id: req.params.id },
+        { ...bookObject, _id: req.params.id }
+      );
+    })
     .then(() => res.status(200).json({ message: 'Livre modifié !' }))
     .catch(error => res.status(400).json({ error }));
 };
 
 // DELETE /api/books/:id
 exports.deleteBook = (req, res) => {
-  Book.deleteOne({ _id: req.params.id })
-    .then(() => res.status(200).json({ message: 'Livre supprimé !' }))
-    .catch(error => res.status(400).json({ error }));
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+      if (book.userId !== req.auth.userId) {
+        return res.status(403).json({ message: 'Requête non autorisée !' });
+      }
+
+      const filename = book.imageUrl.split('/images/')[1];
+      fs.unlink(`images/${filename}`, () => {
+        Book.deleteOne({ _id: req.params.id })
+          .then(() => res.status(200).json({ message: 'Livre supprimé !' }))
+          .catch(error => res.status(400).json({ error }));
+      });
+    })
+    .catch(error => res.status(500).json({ error }));
 };
 
 // POST /api/books/:id/rating
 exports.rateBook = (req, res) => {
-  const { userId, grade } = req.body;
+  const { userId, rating } = req.body;
+  const grade = parseInt(rating, 10);
 
   Book.findOne({ _id: req.params.id })
     .then(book => {
+      const alreadyRated = book.ratings.find(r => r.userId === userId);
+      if (alreadyRated) {
+        return res.status(400).json({ message: 'Vous avez déjà noté ce livre.' });
+      }
+
       book.ratings.push({ userId, grade });
 
-      // recalcul de la moyenne
       const total = book.ratings.reduce((acc, r) => acc + r.grade, 0);
       book.averageRating = total / book.ratings.length;
 

@@ -2,20 +2,34 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+
+
+
 // POST /api/auth/signup
 exports.signup = (req, res) => {
-  bcrypt.hash(req.body.password, 10)
+  const saltRounds = parseInt(process.env.BCRYPT_SALT, 10);
+
+  bcrypt.hash(req.body.password, saltRounds)
     .then(hash => {
       const user = new User({
         email: req.body.email,
         password: hash
       });
-      user.save()
-        .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
-        .catch(error => res.status(400).json({ error }));
+      return user.save();
     })
-    .catch(error => res.status(500).json({ error }));
+    .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
+    .catch(error => res.status(400).json({ error }));
 };
+
+
+
+
+
+
+
+
+
+
 
 // POST /api/auth/login
 exports.login = (req, res) => {
@@ -31,11 +45,23 @@ exports.login = (req, res) => {
           }
           res.status(200).json({
             userId: user._id,
+
+
+
+
+
             token: jwt.sign(
               { userId: user._id },
               process.env.JWT_SECRET,
               { expiresIn: '24h' }
             )
+
+
+
+            
+
+
+
           });
         })
         .catch(error => res.status(500).json({ error }));

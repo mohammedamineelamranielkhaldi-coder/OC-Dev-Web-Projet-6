@@ -7,6 +7,23 @@ const MIME_TYPES = {
   'image/webp': 'webp'
 };
 
+// Storage en mémoire
 const storage = multer.memoryStorage();
 
-module.exports = multer({ storage }).single('image');
+// Filtre MIME
+const fileFilter = (req, file, callback) => {
+  if (MIME_TYPES[file.mimetype]) {
+    // Type autorisé
+    callback(null, true);
+  } else {
+    // Type refusé
+    callback(new Error("Type de fichier non autorisé. Formats acceptés : jpg, jpeg, png, webp"), false);
+  }
+};
+
+module.exports = multer({
+  storage,
+  fileFilter
+}).single('image');
+
+

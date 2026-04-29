@@ -9,11 +9,20 @@ module.exports = async (req, res, next) => {
   const outputPath = path.join('images', filename);
 
   try {
+
+
+
+
     await sharp(req.file.buffer)
       .resize(500)
       .webp({ quality: 80 })
       .toFile(outputPath);
 
+
+
+
+
+      
     req.file.filename = filename;
     next();
   } catch (error) {

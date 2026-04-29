@@ -5,6 +5,12 @@ const auth = require('../middleware/auth');
 const multer = require('../middleware/multer-config');
 const sharpMiddleware = require('../middleware/sharp-config');
 
+
+
+
+
+
+
 // GET /api/books
 router.get('/', bookCtrl.getAllBooks);
 

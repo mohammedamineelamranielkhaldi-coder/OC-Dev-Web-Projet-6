@@ -30,18 +30,24 @@ app.use((req, res, next) => {
     'GET, POST, PUT, DELETE, PATCH, OPTIONS'
   );
 
+  
   // Autoriser le chargement cross-origin des images
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
   next();
 });
 
+
+
+
+
+
 // Middleware global
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ⭐ Désactiver uniquement la règle CORP de Helmet
+// Désactiver uniquement la règle CORP de Helmet
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -54,5 +60,10 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
+
+
+
+
+
 
 module.exports = app;

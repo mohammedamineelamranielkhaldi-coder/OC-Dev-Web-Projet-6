@@ -1,12 +1,25 @@
 const Book = require('../models/Book');
 const fs = require('fs');
 
+
+
+
+
 // GET /api/books
 exports.getAllBooks = (req, res) => {
   Book.find()
     .then(books => res.status(200).json(books))
     .catch(error => res.status(400).json({ error }));
 };
+
+
+
+
+
+
+
+
+
 
 // GET /api/books/bestrating
 exports.getBestRatedBooks = (req, res) => {
@@ -17,6 +30,15 @@ exports.getBestRatedBooks = (req, res) => {
     .catch(error => res.status(400).json({ error }));
 };
 
+
+
+
+
+
+
+
+
+
 // GET /api/books/:id
 exports.getOneBook = (req, res) => {
   Book.findOne({ _id: req.params.id })
@@ -24,8 +46,21 @@ exports.getOneBook = (req, res) => {
     .catch(error => res.status(404).json({ error }));
 };
 
+
+
+
+
+
+
+
+
+
+
 // POST /api/books
 exports.createBook = (req, res) => {
+
+
+
   const bookObject = JSON.parse(req.body.book);
 
   const book = new Book({
@@ -34,10 +69,26 @@ exports.createBook = (req, res) => {
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
 
+
+
+
+
   book.save()
     .then(() => res.status(201).json({ message: 'Livre créé !' }))
     .catch(error => res.status(400).json({ error }));
 };
+
+
+
+
+
+
+
+
+
+
+
+
 
 // PUT /api/books/:id
 exports.updateBook = (req, res) => {
@@ -68,6 +119,18 @@ exports.updateBook = (req, res) => {
     .catch(error => res.status(400).json({ error }));
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
 // DELETE /api/books/:id
 exports.deleteBook = (req, res) => {
   Book.findOne({ _id: req.params.id })
@@ -76,15 +139,33 @@ exports.deleteBook = (req, res) => {
         return res.status(403).json({ message: 'Requête non autorisée !' });
       }
 
+
+
+
       const filename = book.imageUrl.split('/images/')[1];
       fs.unlink(`images/${filename}`, () => {
         Book.deleteOne({ _id: req.params.id })
           .then(() => res.status(200).json({ message: 'Livre supprimé !' }))
           .catch(error => res.status(400).json({ error }));
       });
+
+
+
+
     })
     .catch(error => res.status(500).json({ error }));
 };
+
+
+
+
+
+
+
+
+
+
+
 
 // POST /api/books/:id/rating
 exports.rateBook = (req, res) => {
@@ -93,17 +174,32 @@ exports.rateBook = (req, res) => {
 
   Book.findOne({ _id: req.params.id })
     .then(book => {
+
+
+
       const alreadyRated = book.ratings.find(r => r.userId === userId);
       if (alreadyRated) {
         return res.status(400).json({ message: 'Vous avez déjà noté ce livre.' });
       }
 
+
+
+
       book.ratings.push({ userId, grade });
+
+
+
 
       const total = book.ratings.reduce((acc, r) => acc + r.grade, 0);
       book.averageRating = total / book.ratings.length;
 
+
+
       return book.save();
+
+
+
+    
     })
     .then(updatedBook => res.status(200).json(updatedBook))
     .catch(error => res.status(400).json({ error }));

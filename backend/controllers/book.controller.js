@@ -58,20 +58,18 @@ exports.getOneBook = (req, res) => {
 
 // POST /api/books
 exports.createBook = (req, res) => {
-
-
-
   const bookObject = JSON.parse(req.body.book);
 
   const book = new Book({
-    ...bookObject,
     userId: req.auth.userId,
+    title: bookObject.title,
+    author: bookObject.author,
+    year: bookObject.year,
+    genre: bookObject.genre,
+    ratings: bookObject.ratings,
+    averageRating: bookObject.averageRating,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
-
-
-
-
 
   book.save()
     .then(() => res.status(201).json({ message: 'Livre créé !' }))
@@ -90,17 +88,30 @@ exports.createBook = (req, res) => {
 
 
 
+
 // PUT /api/books/:id
 exports.updateBook = (req, res) => {
-  const bookObject = req.file
-    ? {
-        ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-      }
-    : { ...req.body };
+  const incomingData = req.file
+    ? JSON.parse(req.body.book)
+    : req.body;
+
+  const updatedFields = {
+    title: incomingData.title,
+    author: incomingData.author,
+    year: incomingData.year,
+    genre: incomingData.genre
+  };
+
+  if (req.file) {
+    updatedFields.imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
+  }
 
   Book.findOne({ _id: req.params.id })
     .then(book => {
+      if (!book) {
+        return res.status(404).json({ message: 'Livre introuvable' });
+      }
+
       if (book.userId !== req.auth.userId) {
         return res.status(403).json({ message: 'Requête non autorisée !' });
       }
@@ -112,13 +123,12 @@ exports.updateBook = (req, res) => {
 
       return Book.updateOne(
         { _id: req.params.id },
-        { ...bookObject, _id: req.params.id }
+        { ...updatedFields, _id: req.params.id }
       );
     })
     .then(() => res.status(200).json({ message: 'Livre modifié !' }))
     .catch(error => res.status(400).json({ error }));
 };
-
 
 
 

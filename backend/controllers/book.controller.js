@@ -60,14 +60,24 @@ exports.getOneBook = (req, res) => {
 exports.createBook = (req, res) => {
   const bookObject = JSON.parse(req.body.book);
 
+  const firstRating = bookObject.ratings && bookObject.ratings.length > 0
+    ? parseInt(bookObject.ratings[0].grade, 10)
+    : null;
+
+  const ratingsArray = firstRating !== null
+    ? [{ userId: req.auth.userId, grade: firstRating }]
+    : [];
+    
+  const averageRating = firstRating !== null ? firstRating : 0;
+
   const book = new Book({
     userId: req.auth.userId,
     title: bookObject.title,
     author: bookObject.author,
     year: bookObject.year,
     genre: bookObject.genre,
-    ratings: bookObject.ratings,
-    averageRating: bookObject.averageRating,
+    ratings: ratingsArray,
+    averageRating: averageRating,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
 
@@ -75,6 +85,7 @@ exports.createBook = (req, res) => {
     .then(() => res.status(201).json({ message: 'Livre créé !' }))
     .catch(error => res.status(400).json({ error }));
 };
+
 
 
 
